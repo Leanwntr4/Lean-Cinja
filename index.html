@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-title" content="Lean und Cinja">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1d1d21">
+<style>html,body{margin:0}img{max-width:100%}</style>
+<title>Lean und Cinja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#e9e8e3; --surface:#f6f5f1; --ink:#1c1c20; --muted:#66656c; --line:#d3d1ca;
+  --red:#c21e2e; --red-ink:#ffffff; --bezel:#1d1d21; --paper:#f1f0ec; --chip:#e1dfd8;
+  --display:"Pixelify Sans", "Courier New", monospace;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141417; --surface:#1f1f24; --ink:#eceae4; --muted:#9d9ca3; --line:#33333a;
+    --red:#ff5b64; --red-ink:#1a0306; --bezel:#050507; --paper:#e7e6e1; --chip:#2a2a30;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141417; --surface:#1f1f24; --ink:#eceae4; --muted:#9d9ca3; --line:#33333a;
+  --red:#ff5b64; --red-ink:#1a0306; --bezel:#050507; --paper:#e7e6e1; --chip:#2a2a30;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spacing:.02em}
+h1 span{color:var(--red)}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.device{background:var(--bezel);border-radius:14px;padding:14px 14px 22px;box-shadow:0 10px 30px rgba(0,0,0,.18);position:relative}
+.device::after{content:"";position:absolute;left:50%;bottom:8px;width:34px;height:4px;border-radius:2px;background:#3a3a40;transform:translateX(-50%)}
+canvas#screen{display:block;width:100%;height:auto;aspect-ratio:212/104;background:var(--paper);border-radius:3px;image-rendering:pixelated}
+.device.drawing canvas#screen{cursor:crosshair;touch-action:none}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--chip);border-radius:10px;padding:4px;gap:3px}
+.tabs button{font:600 13px var(--body);color:var(--muted);background:transparent;border:0;border-radius:7px;padding:9px 2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:460px){.tabs button{font-size:11px;padding:8px 1px}.tabs button .new{display:none}}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs button .new{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input,textarea,select{font:16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{resize:vertical;min-height:84px}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 14px var(--body);color:var(--ink);background:var(--chip);border:1px solid transparent;border-radius:999px;padding:7px 12px;cursor:pointer}
+.chip:hover{border-color:var(--line)}
+.chip.sym{font-size:17px;padding:5px 11px;min-width:44px}
+.chip.on{background:var(--ink);color:var(--surface)}
+.meter{font:500 12px var(--mono);color:var(--muted)}
+.meter.warn{color:var(--red)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.split{grid-template-columns:1fr}}
+.stress{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.lvl{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font:500 11.5px var(--body);text-align:center;line-height:1.2}
+.lvl .n{font:700 20px var(--display)}
+.lvl .boxes{display:flex;gap:2px}
+.lvl .boxes i{width:6px;height:8px;border:1px solid currentColor;display:block}
+.lvl .boxes i.f{background:currentColor}
+.lvl.hot .boxes i.f{background:var(--red);border-color:var(--red)}
+.lvl[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+@media (max-width:420px){.stress{grid-template-columns:repeat(3,1fr)}}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.steps b{color:var(--ink);font-weight:600}
+.box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.box h3{margin:0;font-size:14px}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rows li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 10px}
+.rows li.off{opacity:.55}
+.rows label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14.5px}
+.rows .num{font:500 11px var(--mono);color:var(--muted);min-width:14px}
+.mv{width:34px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-size:15px;line-height:1}
+.mv:disabled{opacity:.3;cursor:default}
+.tg{display:flex;align-items:center;gap:10px;font-size:14.5px;cursor:pointer}
+input[type="checkbox"]{width:18px;height:18px;padding:0;accent-color:var(--red);flex:none}
+.cnt{font:500 12px var(--mono);color:var(--muted)}
+.cnt.warn{color:var(--red)}
+.send{display:flex;flex-direction:column;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 16px var(--body);border-radius:10px;padding:13px 16px;text-decoration:none;cursor:pointer;border:0}
+.btn.primary{background:var(--red);color:var(--red-ink)}
+.btn.primary[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btns{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+code{font-family:var(--mono);font-size:12.5px}
+.out{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:10px;word-break:break-all;max-height:88px;overflow:auto;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:12px}
+details .panel{border:0;padding:0}
+.help{color:var(--muted);font-size:13.5px;margin:0}
+.help b{color:var(--ink);font-weight:600}
+.toast{font-size:13px;color:var(--red);min-height:1.2em;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Lean <span>und</span> Cinja</h1>
+    <p class="sub">212 × 104 Pixel Liebe</p>
+  </header>
+
+  <div class="device" id="device"><canvas id="screen" width="212" height="104" aria-label="Vorschau des Displays"></canvas></div>
+  <p class="hint" id="previewHint">So sieht es auf dem Gerät der anderen Person aus.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-mode="text">Nachricht</button>
+    <button role="tab" aria-selected="false" data-mode="draw">Malen</button>
+    <button role="tab" aria-selected="false" data-mode="song">Song</button>
+    <button role="tab" aria-selected="false" data-mode="kapsel">Zeitkapsel</button>
+    <button role="tab" aria-selected="false" data-mode="ort">Wo bin ich</button>
+    <button role="tab" aria-selected="false" data-mode="tier">Haustier</button>
+    <button role="tab" aria-selected="false" data-mode="count">Countdown</button>
+    <button role="tab" aria-selected="false" data-mode="trip">Urlaub</button>
+    <button role="tab" aria-selected="false" data-mode="stress">Stress</button>
+    <button role="tab" aria-selected="false" data-mode="anzeige">Anzeige<i class="new"></i></button>
+  </div>
+
+  <section class="panel" id="p-text">
+    <label class="f" for="msg">Nachricht
+      <textarea id="msg" maxlength="400">Guten Morgen, mein Schatz <3</textarea>
+    </label>
+    <span class="meter" id="meter"></span>
+    <div class="row" aria-label="Symbole">
+      <button class="chip sym" data-ins="<3" title="Herz">❤️</button>
+      <button class="chip sym" data-ins=":kuss:" title="Kuss">😘</button>
+      <button class="chip sym" data-ins=":sonne:" title="Sonne">☀️</button>
+      <button class="chip sym" data-ins=":mond:" title="Mond">🌙</button>
+      <button class="chip sym" data-ins=":kaffee:" title="Kaffee">☕</button>
+      <button class="chip sym" data-ins=":stern:" title="Stern">⭐</button>
+      <button class="chip sym" data-ins=":koffer:" title="Koffer">🧳</button>
+      <button class="chip sym" data-ins=":geschenk:" title="Geschenk">🎁</button>
+      <button class="chip sym" data-ins=":musik:" title="Musik">🎵</button>
+      <button class="chip sym" data-ins=":67:" title="67"><b>67</b></button>
+    </div>
+    <div class="row" aria-label="Schnellnachrichten">
+      <button class="chip" data-set="Guten Morgen, mein Schatz :sonne:">Guten Morgen</button>
+      <button class="chip" data-set="Schlaf gut <3 :mond:">Gute Nacht</button>
+      <button class="chip" data-set="Ich vermisse dich <3">Vermisse dich</button>
+      <button class="chip" data-set="Ich denk an dich :kuss:">Denk an dich</button>
+      <button class="chip" data-set="Stressiger Tag, heute Abend kuscheln? :kaffee:">Stressiger Tag</button>
+      <button class="chip" data-set="Stolz auf dich :stern:">Stolz auf dich</button>
+      <button class="chip" data-set="Frage des Tages: ">Frage des Tages</button>
+      <button class="chip" data-set="6 7 :67:">67</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p-draw" hidden>
+    <p class="help">Male direkt auf dem Display oben. Jeder Punkt ist später 4 × 4 Pixel groß.</p>
+    <div class="row">
+      <button class="chip on" data-pen="1">Schwarz</button>
+      <button class="chip" data-pen="2">Rot</button>
+      <button class="chip" data-pen="0">Radierer</button>
+      <button class="chip" id="clearDraw">Alles löschen</button>
+      <button class="chip" id="heartDraw">Herz-Vorlage</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p-song" hidden>
+    <div class="split">
+      <label class="f" for="songT">Titel
+        <input type="text" id="songT" maxlength="60" value="Musik sein">
+      </label>
+      <label class="f" for="songK">Interpret
+        <input type="text" id="songK" maxlength="44" value="Wincent Weiss">
+      </label>
+    </div>
+    <p class="help">Auf dem Display erscheint eine Song-Karte. Gleichzeitig bekommt sie aufs Handy eine Meldung, die direkt die Spotify-Suche zu diesem Song öffnet.</p>
+    <div class="box">
+      <h3>Live sehen, was du gerade hörst</h3>
+      <p class="help">Spotify lässt kleine Geräte wie dieses Display nicht direkt mitlesen, Last.fm schon. Einmal eingerichtet, steht auf dem Zuhause-Bildschirm, was du hörst. Eine rote Note heißt: läuft gerade.</p>
+      <ol class="steps">
+        <li>Kostenlos bei <b>last.fm</b> anmelden.</li>
+        <li>In den Last.fm-Einstellungen unter <b>Anwendungen</b> Spotify verbinden (Scrobbling).</li>
+        <li>Unter <b>last.fm/api/account/create</b> einen API-Key erstellen.</li>
+        <li>Deinen Last.fm-Namen und den Key im Code ihres Geräts bei <code>LASTFM_NUTZER</code> und <code>LASTFM_KEY</code> eintragen.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="panel" id="p-kapsel" hidden>
+    <label class="f" for="kDate">Geht auf am
+      <input type="date" id="kDate">
+    </label>
+    <label class="f" for="kText">Nachricht für die Zukunft
+      <textarea id="kText" maxlength="300">Vor einem Monat hab ich das hier versteckt. Ich liebe dich <3</textarea>
+    </label>
+    <span class="meter" id="kMeter"></span>
+    <div class="row" aria-label="Kapsel-Vorlagen">
+      <button class="chip" data-kapsel="30">In einem Monat</button>
+      <button class="chip" data-kapsel="100">In 100 Tagen</button>
+      <button class="chip" data-kapsel="365">In einem Jahr</button>
+    </div>
+    <p class="help">Die Kapsel bleibt versiegelt. Auf dem Zuhause-Bildschirm steht nur „Zeitkapsel in 30 Tagen“. Am Morgen des Tages geht sie auf, und du bekommst Bescheid. Bis zu 5 Kapseln können gleichzeitig warten, sie überstehen auch einen leeren Akku.</p>
+  </section>
+
+  <section class="panel" id="p-ort" hidden>
+    <label class="f" for="ortName">Wo bist du gerade?
+      <input type="text" id="ortName" maxlength="30" value="Wien" autocomplete="off">
+    </label>
+    <div class="row" id="ortChips"></div>
+    <p class="help">Ihr Gerät zeigt Stadt und aktuelles Wetter dort an und aktualisiert das Wetter jede Stunde selbst. Andersherum bekommst du bei jeder angekommenen Nachricht eine Meldung mit dem Wetter bei ihr.</p>
+    <div class="row"><button class="chip" id="ortOff">Ort ausblenden</button></div>
+  </section>
+
+  <section class="panel" id="p-tier" hidden>
+    <div class="row" aria-label="Stimmung ansehen">
+      <button class="chip on" data-mood="1">Glücklich</button>
+      <button class="chip" data-mood="2">Zufrieden</button>
+      <button class="chip" data-mood="3">Durstig</button>
+      <button class="chip" data-mood="0">Schläft</button>
+    </div>
+    <p class="help">Das Tier lebt auf dem Zuhause-Bildschirm und wird durch Trinken gepflegt. Nach 2,5 Stunden ohne Glas hat es Durst, dann kommt eine Erinnerung aufs Handy, mit einem <b>Getrunken</b>-Knopf direkt in der Meldung. Wer das Tagesziel schafft, baut eine Serie auf. Katze oder Hund, Name und Tagesziel stellst du im Reiter <b>Anzeige</b> ein.</p>
+  </section>
+
+  <section class="panel" id="p-count" hidden>
+    <div class="split">
+      <label class="f" for="cdDate">Datum
+        <input type="date" id="cdDate">
+      </label>
+      <label class="f" for="cdLabel">Wofür
+        <input type="text" id="cdLabel" maxlength="30" value="Wiedersehen">
+      </label>
+    </div>
+    <p class="help">Das Gerät zählt ab jetzt jeden Morgen selbst herunter. Kommt danach eine normale Nachricht, steht der Countdown klein oben rechts.</p>
+    <div class="row"><button class="chip" id="cdOff">Countdown beenden</button></div>
+  </section>
+
+  <section class="panel" id="p-trip" hidden>
+    <div class="split">
+      <label class="f" for="tripStart">Urlaub beginnt
+        <input type="date" id="tripStart">
+      </label>
+      <label class="f" for="tripEnd">Urlaub endet (optional)
+        <input type="date" id="tripEnd">
+      </label>
+    </div>
+    <label class="f" for="tripDest">Wohin
+      <input type="text" id="tripDest" maxlength="20" value="Bali">
+    </label>
+    <p class="help">Bis zum Abflug zählt das Gerät die Tage runter, im Urlaub zeigt es „Tag 3 von 10“. Danach steht der Timer klein unten rechts und auf dem Zuhause-Bildschirm. Nach dem Urlaub verschwindet er von selbst.</p>
+    <div class="row"><button class="chip" id="tripOff">Urlaubs-Timer beenden</button></div>
+  </section>
+
+  <section class="panel" id="p-stress" hidden>
+    <p class="help">Wie gestresst bist du heute? Das Gerät der anderen Person zeigt es an. Um 6 Uhr morgens wird es automatisch zurückgesetzt.</p>
+    <div class="stress" id="stressGrid"></div>
+    <div class="row"><button class="chip" id="stressOff">Anzeige ausblenden</button></div>
+  </section>
+
+  <section class="panel" id="p-anzeige" hidden>
+    <label class="f" for="cfgTarget">Für welches Gerät
+      <select id="cfgTarget"><option value="own">Mein Gerät</option><option value="partner">Das andere Gerät</option></select>
+    </label>
+    <div class="box">
+      <h3>Zuhause-Bildschirm</h3>
+      <p class="help">Haken setzen, was du sehen willst, und mit den Pfeilen sortieren. Oben steht, was dir am wichtigsten ist.</p>
+      <ul class="rows" id="cfgRows"></ul>
+      <span class="cnt" id="cfgCount"></span>
+    </div>
+    <div class="box">
+      <h3>Haustier</h3>
+      <label class="tg"><input type="checkbox" id="cfgTier"> Haustier anzeigen</label>
+      <div class="split">
+        <label class="f" for="cfgArt">Tier
+          <select id="cfgArt"><option value="0">Katze</option><option value="1">Hund</option></select>
+        </label>
+        <label class="f" for="cfgName">Name
+          <input type="text" id="cfgName" maxlength="9">
+        </label>
+        <label class="f" for="cfgZiel">Gläser pro Tag
+          <select id="cfgZiel"><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>10</option><option>12</option></select>
+        </label>
+        <label class="f" for="cfgDurst">Durst nach
+          <select id="cfgDurst"><option value="90">1,5 Stunden</option><option value="120">2 Stunden</option><option value="150">2,5 Stunden</option><option value="180">3 Stunden</option><option value="240">4 Stunden</option></select>
+        </label>
+      </div>
+      <label class="tg"><input type="checkbox" id="cfgPush"> Trink-Erinnerungen aufs Handy</label>
+    </div>
+    <div class="box">
+      <h3>Verhalten</h3>
+      <div class="split">
+        <label class="f" for="cfgZuh">Zuhause-Bildschirm nach
+          <select id="cfgZuh"><option value="1">1 Stunde</option><option value="2">2 Stunden</option><option value="4">4 Stunden</option><option value="8">8 Stunden</option><option value="0">nie</option></select>
+        </label>
+        <label class="f" for="cfgMin">Nach Neuem schauen alle
+          <select id="cfgMin"><option value="5">5 Minuten</option><option value="10">10 Minuten</option><option value="15">15 Minuten</option><option value="30">30 Minuten</option></select>
+        </label>
+      </div>
+      <label class="tg"><input type="checkbox" id="cfgGruss"> Jeden Morgen ein Gruß</label>
+      <label class="tg"><input type="checkbox" id="cfgAnk"> Angekommen-Meldungen an den Absender</label>
+      <label class="tg"><input type="checkbox" id="cfgLo"> Countdown oben über Nachrichten</label>
+      <label class="tg"><input type="checkbox" id="cfgLu"> Stress und Urlaub unten unter Nachrichten</label>
+      <p class="help">Seltener nachschauen spart Akku. Bei 5 Minuten muss das Gerät öfter an die Steckdose.</p>
+    </div>
+  </section>
+
+  <section class="panel send" aria-label="Senden">
+    <div class="split" id="sendOpts">
+      <label class="f" for="when">Wann
+        <select id="when">
+          <option value="now">Sofort</option>
+          <option value="1h">In einer Stunde</option>
+          <option value="tonight">Heute 22:00</option>
+          <option value="morning">Morgen 7:00</option>
+        </select>
+      </label>
+      <label class="f" for="name">Absender
+        <input type="text" id="name" maxlength="30" value="Lean">
+      </label>
+    </div>
+    <div class="btns">
+      <a class="btn primary" id="sendBtn" href="#" target="_blank" rel="noopener">Senden</a>
+      <button class="btn ghost" id="copyBtn">Kopieren</button>
+    </div>
+    <p class="toast" id="toast" role="status"></p>
+    <div class="out" id="out"></div>
+    <p class="help" id="sendHelp"></p>
+  </section>
+
+  <details id="setup">
+    <summary>Einstellungen</summary>
+    <div class="panel">
+      <label class="f" for="topic">Thema des anderen Geräts
+        <input type="text" id="topic" placeholder="z. B. cinja-x7k29qmw4t" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="f" for="ownTopic">Thema deines eigenen Geräts
+        <input type="text" id="ownTopic" placeholder="z. B. lean-p3m81zh6ra" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="row"><button class="chip" id="genTopic">Zwei geheime Namen erzeugen</button></div>
+      <p class="help">Die beiden Themen müssen genau so im Code stehen: <code>THEMA</code> ist das eigene Gerät, <code>PARTNER_THEMA</code> das andere. In der ntfy-App abonniert jede Person ihr eigenes Thema mit <b>-handy</b> am Ende, also zum Beispiel <code>lean-p3m81zh6ra-handy</code>. Dort kommen Angekommen-Meldungen, Trink-Erinnerungen und Song-Links an.</p>
+      <p class="help" id="handyTopic"></p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+  const W=212,H=104,GW=53,GH=26;
+  const C={w:"#f1f0ec",b:"#141416",r:"#c8102e"};
+  const cv=document.getElementById("screen"), ctx=cv.getContext("2d");
+  const $=id=>document.getElementById(id);
+  let mode="text", pen=1, offFlag=null, stressSel=3, moodSel=1;
+  const grid=new Uint8Array(GW*GH);
+
+  // ---------- storage (only in this browser)
+  const store={get(k){try{return localStorage.getItem("hb_"+k)}catch(e){return null}},set(k,v){try{localStorage.setItem("hb_"+k,v)}catch(e){}}};
+  ["topic","ownTopic","name"].forEach(k=>{const v=store.get(k); if(v!==null) $(k).value=v;});
+
+  // ---------- display settings ("Anzeige"), one set per device
+  const ROWS={G:"Begrüßung",D:"Datum",O:"Wo bin ich",W:"Wetter dort",S:"Song (Last.fm)",U:"Urlaubs-Timer",C:"Countdown",X:"Stress",K:"Zeitkapsel",N:"Letzte Nachricht"};
+  const DEFAULT_CFG={tier:true,art:0,name:"Mimi",ziel:8,durst:150,push:true,gruss:true,zuhause:4,minuten:10,ank:true,lo:true,lu:true,
+    rows:["G","D","O","W","S","U","C","X","K","N"].map(k=>({k,on:k!=="D"}))};
+  const cfgs={};
+  ["own","partner"].forEach(t=>{let c=null;try{c=JSON.parse(store.get("cfg_"+t)||"null");}catch(e){} cfgs[t]=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c||{});});
+  let S=cfgs[store.get("cfgTarget")==="partner"?"partner":"own"];
+  if(!$("topic").value) $("setup").open=true;
+  let sent={};
+  try{sent=JSON.parse(store.get("sent")||"{}")||{};}catch(e){sent={};}
+  let orte=[];
+  try{orte=JSON.parse(store.get("orte")||"[]")||[];}catch(e){orte=[];}
+  if(!orte.length) orte=["Düsseldorf","Stuttgart","Wien","Paris"];
+
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const plus=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d);};
+  const de=(s,short)=>s?`${s.slice(8,10)}.${s.slice(5,7)}.${short?s.slice(2,4):s.slice(0,4)}`:"";
+  $("cdDate").value=plus(14);
+  $("tripStart").value=plus(47); $("tripEnd").value=plus(57);
+  $("kDate").value=plus(30);
+
+  // ---------- drawing primitives (same geometry as the device)
+  function fc(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x+.5,y+.5,r+.5,0,Math.PI*2);ctx.fill();}
+  function ft(a,b,c2,d,e,f,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(a+.5,b+.5);ctx.lineTo(c2+.5,d+.5);ctx.lineTo(e+.5,f+.5);ctx.closePath();ctx.fill();}
+  function ln(a,b,c2,d,c){ctx.strokeStyle=c;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(a+.5,b+.5);ctx.lineTo(c2+.5,d+.5);ctx.stroke();}
+  function fr(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+  function sr(x,y,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,h-1);}
+  function oc(x,y,r,c){ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x+.5,y+.5,r,0,Math.PI*2);ctx.stroke();}
+  function tx(s,x,y,size,c){ctx.fillStyle=c;ctx.font=`500 ${10*size}px "JetBrains Mono", ui-monospace, monospace`;ctx.textBaseline="top";ctx.fillText(s,x,y);}
+  function center(s,y,size,c){const x=Math.max(0,(W-s.length*6*size)/2);tx(s,x,y,size,c);}
+  const cut=(s,n)=>s.length<=n?s:s.slice(0,Math.max(n-1,0))+".";
+
+  const ICON={
+    herz(x,y){fc(x-5,y-3,6,C.r);fc(x+5,y-3,6,C.r);ft(x-11,y-1,x+11,y-1,x,y+11,C.r);},
+    kuss(x,y){fc(x-5,y-3,5,C.r);fc(x+5,y-3,5,C.r);fc(x,y+2,7,C.r);ft(x-11,y,x-4,y-3,x-4,y+3,C.r);ft(x+11,y,x+4,y-3,x+4,y+3,C.r);ln(x-9,y,x+9,y,C.w);},
+    sonne(x,y){fc(x,y,6,C.r);for(let i=0;i<8;i++){const w=i*Math.PI/4;ln(x+Math.cos(w)*9,y+Math.sin(w)*9,x+Math.cos(w)*12,y+Math.sin(w)*12,C.b);}},
+    mond(x,y){fc(x,y,10,C.b);fc(x+5,y-4,9,C.w);fc(x+7,y+7,1,C.r);},
+    kaffee(x,y){ctx.fillStyle=C.b;ctx.beginPath();ctx.roundRect(x-10,y-4,15,14,3);ctx.fill();ctx.strokeStyle=C.b;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x+6,y+2,3.5,0,Math.PI*2);ctx.stroke();ln(x-12,y+11,x+9,y+11,C.b);ln(x-6,y-7,x-4,y-11,C.r);ln(x-1,y-7,x+1,y-11,C.r);},
+    stern(x,y){for(let k=0;k<5;k++){const wa=(-90+72*k)*Math.PI/180,w1=(-54+72*k)*Math.PI/180,w0=(-126+72*k)*Math.PI/180;const ax=x+Math.cos(wa)*11,ay=y+Math.sin(wa)*11;ft(x,y,ax,ay,x+Math.cos(w1)*4.5,y+Math.sin(w1)*4.5,C.b);ft(x,y,ax,ay,x+Math.cos(w0)*4.5,y+Math.sin(w0)*4.5,C.b);}fc(x,y,4,C.b);},
+    s67(x,y){tx("6",x-12,y-8,2,C.b);tx("7",x+1,y-8,2,C.r);ft(x-10,y-10,x-2,y-10,x-6,y-14,C.b);ft(x+3,y+10,x+11,y+10,x+7,y+14,C.r);},
+    koffer(x,y){sr(x-4,y-11,8,6,C.b);sr(x-3,y-10,6,5,C.b);ctx.fillStyle=C.r;ctx.beginPath();ctx.roundRect(x-11,y-6,22,15,3);ctx.fill();ln(x-5,y-5,x-5,y+7,C.w);ln(x+5,y-5,x+5,y+7,C.w);fc(x-7,y+11,1,C.b);fc(x+7,y+11,1,C.b);},
+    geschenk(x,y){fr(x-10,y-4,20,14,C.r);fr(x-11,y-8,22,5,C.r);fr(x-2,y-8,4,18,C.b);oc(x-4,y-11,3,C.b);oc(x+4,y-11,3,C.b);},
+    musik(x,y){fc(x-7,y+7,4,C.b);fc(x+6,y+5,4,C.b);fr(x-4,y-9,2,16,C.b);fr(x+9,y-11,2,16,C.b);ft(x-4,y-9,x+10,y-12,x+10,y-8,C.r);ft(x-4,y-9,x-4,y-5,x+10,y-8,C.r);}
+  };
+  function miniKoffer(x,y){sr(x+3,y,3,3,C.b);fr(x,y+2,9,6,C.r);}
+  function miniGeschenk(x,y){fr(x,y+2,9,6,C.r);fr(x+4,y,1,8,C.b);ln(x+1,y,x+3,y+2,C.b);ln(x+7,y,x+5,y+2,C.b);}
+  function miniHerz(x,y){fc(x+1,y+1,1,C.r);fc(x+5,y+1,1,C.r);ft(x,y+2,x+6,y+2,x+3,y+5,C.r);fr(x+3,y+1,1,1,C.r);}
+  function tropfen(x,y,voll){ if(voll){fc(x+2,y+5,2,C.r);ft(x+2,y,x,y+4,x+4,y+4,C.r);} else {oc(x+2,y+5,2,C.b);ln(x+2,y,x,y+4,C.b);ln(x+2,y,x+4,y+4,C.b);} }
+
+  const ALIAS=[
+    ["herz",["<3",":herz:","❤","💕","💖","💗","😍","🥰"]],
+    ["kuss",[":kuss:","😘","💋"]],
+    ["sonne",[":sonne:","☀","🌞"]],
+    ["mond",[":mond:","🌙","😴"]],
+    ["kaffee",[":kaffee:","☕"]],
+    ["stern",[":stern:","⭐","✨"]],
+    ["s67",[":67:","6️⃣7️⃣"]],
+    ["koffer",[":koffer:","🧳","✈","🌴","🏝"]],
+    ["geschenk",[":geschenk:","🎁"]],
+    ["musik",[":musik:","🎵","🎶","🎧"]]
+  ];
+  function clean(s){
+    s=s.replace(/[‘’]/g,"'").replace(/[“”„]/g,'"').replace(/[–—]/g,"-").replace(/…/g,"...");
+    let o="";
+    for(const ch of s){
+      if("äöüÄÖÜß".includes(ch)||/[\x20-\x7E]/.test(ch)){o+=ch;continue;}
+      const n=ch.normalize("NFD");
+      if(n.length>1&&/[A-Za-z]/.test(n[0])) o+=n[0];
+    }
+    return o.replace(/ {2,}/g," ").trim();
+  }
+  function extract(text){
+    const syms=[];
+    for(const [k,list] of ALIAS){for(const a of list){let i;while((i=text.indexOf(a))>=0){text=text.slice(0,i)+text.slice(i+a.length);if(syms.length<7)syms.push(k);}}}
+    return {text:clean(text),syms};
+  }
+  function wrap(text,maxLines){
+    const PER=17, lines=[]; let cur="";
+    for(let w of text.split(" ")){
+      if(!w) continue;
+      while(w.length>PER){ if(cur){lines.push(cur);cur="";} lines.push(w.slice(0,PER)); w=w.slice(PER); }
+      const p=cur?cur+" "+w:w;
+      if(p.length<=PER) cur=p; else {lines.push(cur);cur=w;}
+    }
+    if(cur) lines.push(cur);
+    return {lines:lines.slice(0,maxLines),total:lines.length,cut:lines.length>maxLines};
+  }
+  function daysUntil(v){
+    if(!v) return null;
+    const t=new Date(v+"T12:00:00"), n=new Date(); n.setHours(12,0,0,0);
+    return Math.round((t-n)/864e5);
+  }
+
+  // ---------- pet (identical pixel data to the device)
+  const SPRITE={
+    katze:[".##..........##.........",".#r#........#r#.........",".#rr########rr#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........","..#..........#..........","...##########...........","..#..........#....##....","..#..........#....##....","..#...rrrr...#....##....","..#...rrrr...#....##....","..#...rrrr...#....##....","..#..........######.....","..#..#....#..#..........","..############.........."],
+    hund:["....########............","...#........#...........",".###........###.........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........",".###........###.........","...#........#...........","....#......#.....##.....",".....######.....##......","...#rrrrrrrr#..##.......","...#........###.........","...#..rrrr..#...........","...#..rrrr..#...........","...#........#...........","...#........#...........","...#..#..#..#...........","...##########..........."]
+  };
+  const FACE={
+    katze:[
+      [[3,6,1],[4,6,1],[5,6,1],[10,6,1],[11,6,1],[12,6,1],[7,7,2],[8,7,2],[7,9,1],[8,9,1]],
+      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[5,8,1],[6,9,1],[7,9,1],[8,9,1],[9,9,1],[10,8,1],[3,7,2],[12,7,2]],
+      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[6,9,1],[7,9,1],[8,9,1],[9,9,1]],
+      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[6,9,1],[7,8,1],[8,8,1],[9,9,1],[4,7,2],[4,8,2]]
+    ],
+    hund:[
+      [[5,5,1],[6,5,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1]],
+      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,8,1],[6,9,1],[9,9,1],[10,8,1],[7,9,2],[8,9,2],[7,10,2]],
+      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,8,1],[6,9,1],[9,9,1],[10,8,1]],
+      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,10,1],[6,9,1],[9,9,1],[10,10,1],[5,6,2],[5,7,2]]
+    ]
+  };
+  function drawPet(sx,sy,s,art){
+    SPRITE[art].forEach((row,y)=>{for(let x=0;x<24;x++){const c=row[x]; if(c==="#")fr(sx+x*2,sy+y*2,2,2,C.b); else if(c==="r")fr(sx+x*2,sy+y*2,2,2,C.r);}});
+    FACE[art][s].forEach(([x,y,c])=>fr(sx+x*2,sy+y*2,2,2,c===2?C.r:C.b));
+    if(s===1){miniHerz(sx+42,sy+2);miniHerz(sx+46,sy+12);}
+    if(s===3){fc(sx+46,sy+10,4,C.r);ft(sx+46,sy+1,sx+42,sy+8,sx+50,sy+8,C.r);}
+    if(s===0){tx("z",sx+40,sy+8,1,C.b);tx("Z",sx+46,sy,1,C.b);}
+  }
+
+  // ---------- status elements
+  const STRESS_W=38+5*7;
+  function stressBoxes(x,y,val){for(let i=0;i<5;i++){const bx=x+i*7; if(i<val) fr(bx,y,6,7,val>=4?C.r:C.b); else sr(bx,y,6,7,C.b);}}
+  function stressBar(x,y,val){tx("Stress",x,y,1,C.b);stressBoxes(x+38,y,val);}
+  function tripShort(t){
+    let ziel=cut(clean(t.dest||""),12);
+    const bis=daysUntil(t.start); let s;
+    if(bis>0) s=bis+(bis===1?" Tag":" Tage");
+    else if(bis===0) s="heute!";
+    else if(t.end) s="Tag "+(1-bis)+"/"+(daysUntil(t.end)-bis+1);
+    else s="jetzt!";
+    return ziel?ziel+" "+s:"Urlaub "+s;
+  }
+  function tripActive(t){ if(!t||!t.start) return false; return t.end?daysUntil(t.end)>=0:daysUntil(t.start)>=0; }
+  function cdShort(c){
+    const t=daysUntil(c.date), ziel=clean(c.label||"");
+    if(t===0) return ziel?"Heute: "+ziel:"Heute!";
+    const s=t+(t===1?" Tag":" Tage");
+    return ziel?s+" bis "+ziel:"noch "+s;
+  }
+  function bars(title,stressVal,trip,cd){
+    title=clean(title||"");
+    const cdOn=cd&&cd.date&&daysUntil(cd.date)>=0, top=!!title||cdOn;
+    if(top){
+      const right=cdOn?cdShort(cd):"";
+      tx(cut(title,Math.floor((W-8-right.length*6-6)/6)),4,3,1,C.r);
+      if(cdOn) tx(right,W-4-right.length*6,3,1,C.b);
+    }
+    const st=stressVal!=null&&stressVal>=0, ul=tripActive(trip), bottom=st||ul;
+    if(bottom){
+      ln(0,92,W-1,92,C.b);
+      if(st) stressBar(4,95,stressVal);
+      if(ul){
+        const u=cut(tripShort(trip),Math.floor((W-8-(st?STRESS_W+8:0)-12)/6)), ux=W-4-u.length*6;
+        miniKoffer(ux-12,95); tx(u,ux,95,1,C.b);
+      }
+    }
+    return {top,bottom};
+  }
+
+  // ---------- screens
+  function clear(){fr(0,0,W,H,C.w);}
+  function drawTextScreen(raw,title){
+    const {text,syms}=extract(raw);
+    const {top,bottom}=bars(title,sent.stress,sent.trip,sent.cd);
+    const startY=top?16:4, endY=bottom?90:H;
+    const maxL=Math.min(4,Math.max(1,Math.floor((endY-startY-(syms.length?26:0))/18)));
+    const w=wrap(text,maxL);
+    let symY;
+    if(text){ w.lines.forEach((l,i)=>tx(l,4,startY+i*18,2,C.b)); symY=endY-13; }
+    else symY=Math.floor((startY+endY)/2);
+    const step=28, x0=(W-syms.length*step)/2+step/2;
+    syms.forEach((k,i)=>ICON[k](Math.round(x0+i*step),symY));
+    return {used:Math.min(w.total,maxL),max:maxL,cut:w.cut};
+  }
+  function drawSong(title,artist,from){
+    const {bottom}=bars(from+" schickt dir einen Song",sent.stress,sent.trip,sent.cd);
+    ICON.musik(22,44);
+    title=clean(title); let z1=title, z2="";
+    if(title.length>13){ let c=title.lastIndexOf(" ",13); if(c<=0)c=13; z1=title.slice(0,c); z2=cut(title.slice(title[c]===" "?c+1:c),13); }
+    tx(z1,44,20,2,C.b); if(z2) tx(z2,44,38,2,C.b);
+    tx(cut(clean(artist),27),44,z2?58:40,1,C.r);
+    tx("Link ist auf deinem Handy",44,bottom?78:86,1,C.b);
+  }
+  function bigNumber(top,n,bottom){
+    center(top,4,2,C.b); center(String(n),26,5,C.r);
+    if(bottom.length<=17) center(bottom,76,2,C.b); else center(bottom,82,1,C.b);
+  }
+  function drawGrid(){for(let i=0;i<GW*GH;i++){const v=grid[i]; if(!v) continue; fr((i%GW)*4,Math.floor(i/GW)*4,4,4,v===2?C.r:C.b);}}
+  function drawCount(){
+    if(offFlag==="count"){center("Countdown",30,2,C.b);center("wird beendet",56,1,C.b);return;}
+    const t=daysUntil($("cdDate").value), ziel=clean($("cdLabel").value);
+    if(t===null||t<0){center("Datum wählen",40,2,C.b);return;}
+    if(t===0){center("Heute ist es",22,2,C.b);center("so weit!",44,2,C.r);if(ziel)center(ziel,72,ziel.length<=17?2:1,C.b);ICON.herz(W-16,16);return;}
+    bigNumber("Noch",t,(t===1?"Tag":"Tage")+(ziel?" bis "+ziel:""));
+    if(sent.stress!=null) stressBar(W-4-STRESS_W,4,sent.stress);
+  }
+  function drawTrip(){
+    if(offFlag==="trip"){center("Urlaubs-Timer",30,2,C.b);center("wird beendet",56,1,C.b);return;}
+    const start=$("tripStart").value, end=$("tripEnd").value, ziel=clean($("tripDest").value);
+    const bis=daysUntil(start);
+    if(bis===null){center("Datum wählen",40,2,C.b);return;}
+    ICON.koffer(18,18);
+    if(bis>0){ bigNumber("Noch",bis,(bis===1?"Tag":"Tage")+(ziel?" bis ":" bis Urlaub")+ziel); }
+    else { center("Urlaub!",12,3,C.r); center(bis===0?"Heute geht's los":end?`Tag ${1-bis} von ${daysUntil(end)-bis+1}`:"Geniess es!",46,2,C.b); if(ziel)center(ziel,72,ziel.length<=17?2:1,C.b); }
+    if(sent.stress!=null) stressBar(W-4-STRESS_W,4,sent.stress); else ICON.sonne(W-18,18);
+  }
+
+  // Zuhause view: pet left, info lines right (same layout as the device, follows the "Anzeige" settings)
+  const WT=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"], MO=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  function datumText(room){const d=new Date(),l=`${WT[d.getDay()]}, ${d.getDate()}. ${MO[d.getMonth()]}`;return l.length<=room?l:`${WT[d.getDay()].slice(0,2)}, ${d.getDate()}. ${MO[d.getMonth()]}`;}
+  function homeLines(o,s,room){
+    const z=[], add=(t,f,i)=>{if(z.length<8)z.push({t,f:f||C.b,i:i||0});};
+    const tier=clean(S.name||"Mimi"), from=clean(o.from), durst=S.tier&&s===3;
+    if(durst){add(tier+" hat Durst!",C.r);add("Trink ein Glas Wasser");}
+    let nachOrt=false;
+    const h=new Date().getHours();
+    const gruss=((h>=22||h<5)?"Gute Nacht":h<11?"Guten Morgen":h<18?"Hallo":"Guten Abend")+", "+clean(o.me||"Cinja");
+    for(const r of S.rows){
+      if(!r.on) continue;
+      const war=nachOrt; nachOrt=false;
+      switch(r.k){
+        case "G": if(!durst) add(gruss,C.r); break;
+        case "D": add(datumText(room)); break;
+        case "O": if(o.ort){add(from+" ist in "+clean(o.ort));nachOrt=true;} break;
+        case "W": if(o.ort&&o.wetter) add(war?"  "+o.wetter:clean(o.ort)+": "+o.wetter); break;
+        case "S": if(o.song){add(clean(o.song.t),C.b,o.song.live?"noteR":"note");add("  "+clean(o.song.k));} break;
+        case "U": if(tripActive(o.trip)) add(tripShort(o.trip),C.b,"koffer"); break;
+        case "C": if(o.cd&&o.cd.date&&daysUntil(o.cd.date)>=0) add(cdShort(o.cd)); break;
+        case "X": if(o.stress!=null) add(from+"s Stress",C.b,"stress"); break;
+        case "K": if(o.kapsel){const t=daysUntil(o.kapsel); add(t<=0?"Zeitkapsel morgen frueh":t===1?"Zeitkapsel in 1 Tag":`Zeitkapsel in ${t} Tagen`,C.b,"geschenk");} break;
+        case "N": if(o.last){const t=extract(o.last).text; if(t) add('"'+t+'"');} break;
+      }
+    }
+    if(!z.length) add(gruss,C.r);
+    return z;
+  }
+  function drawHome(o){
+    const s=S.tier?o.mood:2, tier=clean(S.name||"Mimi");
+    let X=4, MAXZ=34;
+    if(S.tier){
+      drawPet(4,4,s,+S.art===1?"hund":"katze");
+      const nm=cut(tier,9); tx(nm,(58-nm.length*6)/2,47,1,C.r);
+      const ziel=+S.ziel, anzahl=Math.min(ziel,8), voll=ziel<=8?o.glaeser:Math.floor(o.glaeser*8/ziel);
+      const x0=(58-anzahl*6)/2;
+      for(let i=0;i<anzahl;i++) tropfen(x0+i*6,58,i<voll);
+      const gl=`${o.glaeser}/${ziel} Glas`; tx(gl,(58-gl.length*6)/2,70,1,C.b);
+      if(o.serie>0){const se="Serie "+o.serie; tx(se,(58-se.length*6)/2,81,1,C.b);}
+      const wort=["schläft","glücklich","zufrieden","durstig!"][s];
+      tx(wort,(58-wort.length*6)/2,93,1,s===3?C.r:C.b);
+      ln(58,3,58,H-4,C.b);
+      X=63; MAXZ=24;
+    }
+    const z=homeLines(o,s,MAXZ);
+    z.forEach((l,i)=>{
+      const y=4+i*12; let x=X;
+      if(l.i==="koffer"){miniKoffer(X,y);x=X+12;}
+      if(l.i==="geschenk"){miniGeschenk(X,y);x=X+12;}
+      if(l.i==="note"||l.i==="noteR"){tx("♫",X,y,1,l.i==="noteR"?C.r:C.b);x=X+10;}
+      const room=MAXZ-Math.floor((x-X+5)/6);
+      if(l.i==="stress"){const t=cut(l.t,13);tx(t,X,y,1,C.b);stressBoxes(X+(t.length+1)*6,y,o.stress);}
+      else tx(cut(l.t,room),x,y,1,l.f);
+    });
+    return z.length;
+  }
+  function homeOpts(extra){
+    const from=$("name").value.trim()||"Lean", ziel=+S.ziel;
+    return Object.assign({
+      mood:moodSel, glaeser:[0,Math.max(ziel-2,1),Math.ceil(ziel/2)-1,2][moodSel], serie:moodSel===1?4:0,
+      from, me:"Cinja",
+      ort:sent.ort||"Wien", wetter:"12°C, Regen",
+      song:sent.song?{t:sent.song.t,k:sent.song.k,live:false}:{t:"Musik sein",k:"Wincent Weiss",live:true},
+      trip:sent.trip||{start:plus(47),end:plus(57),dest:"Bali"},
+      cd:sent.cd||{date:plus(14),label:"Wiedersehen"},
+      stress:sent.stress!=null?sent.stress:2,
+      kapsel:sent.kapsel||plus(30), last:sent.lastText||"Hab dich lieb <3"
+    },extra||{});
+  }
+
+  function render(){
+    clear();
+    const m=$("meter");
+    if(mode==="text"){
+      const r=drawTextScreen($("msg").value,$("name").value);
+      m.textContent=`${r.used} von ${r.max} Zeilen`+(r.cut?" · der Rest wird abgeschnitten":"");
+      m.classList.toggle("warn",r.cut);
+    }
+    else if(mode==="draw") drawGrid();
+    else if(mode==="song") drawSong($("songT").value,$("songK").value,$("name").value.trim()||"Lean");
+    else if(mode==="kapsel"){
+      bars("Zeitkapsel vom "+de(iso(new Date()),true));
+      const {text,syms}=extract($("kText").value); syms.push("geschenk");
+      const maxL=Math.min(4,Math.max(1,Math.floor((H-16-26)/18)));
+      const wk=wrap(text,maxL); wk.lines.forEach((l,i)=>tx(l,4,16+i*18,2,C.b));
+      $("kMeter").textContent=`${Math.min(wk.total,maxL)} von ${maxL} Zeilen`+(wk.cut?" · der Rest wird abgeschnitten":""); $("kMeter").classList.toggle("warn",wk.cut);
+      const step=28,x0=(W-Math.min(syms.length,7)*step)/2+step/2;
+      syms.slice(0,7).forEach((k,i)=>ICON[k](Math.round(x0+i*step),H-13));
+    }
+    else if(mode==="ort") drawHome(homeOpts({mood:2,ort:offFlag==="ort"?null:($("ortName").value.trim()||null),wetter:"wird vom Gerät geholt"}));
+    else if(mode==="tier") drawHome(homeOpts());
+    else if(mode==="anzeige"){
+      const n=drawHome(homeOpts({mood:moodSel===0?1:moodSel}));
+      const on=S.rows.filter(r=>r.on).length;
+      $("cfgCount").textContent=`Mit Beispieldaten passen ${n} von 8 Zeilen aufs Display. Leere Punkte (z. B. kein Urlaub geplant) rutschen automatisch weg.`;
+      $("cfgCount").classList.toggle("warn",n>=8&&on>6);
+    }
+    else if(mode==="count") drawCount();
+    else if(mode==="trip") drawTrip();
+    else {
+      const save=sent.stress; sent.stress=offFlag==="stress"?null:stressSel;
+      drawTextScreen(sent.lastText||"Ich denk an dich <3",$("name").value);
+      sent.stress=save;
+    }
+    update();
+  }
+
+  // ---------- stress picker
+  const LV=["Tiefen­entspannt","Locker","Geht so","Viel los","Gestresst","Land unter"];
+  const sg=$("stressGrid");
+  LV.forEach((label,n)=>{
+    const b=document.createElement("button");
+    b.className="lvl"+(n>=4?" hot":""); b.type="button"; b.dataset.lvl=n;
+    b.innerHTML=`<span class="n">${n}</span><span class="boxes">${[0,1,2,3,4].map(i=>`<i class="${i<n?"f":""}"></i>`).join("")}</span><span>${label}</span>`;
+    b.addEventListener("click",()=>{stressSel=n;offFlag=null;markStress();render();});
+    sg.appendChild(b);
+  });
+  function markStress(){sg.querySelectorAll(".lvl").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.lvl===stressSel&&offFlag!=="stress")));}
+  if(sent.stress!=null) stressSel=sent.stress;
+  markStress();
+
+  // ---------- city chips
+  function renderOrte(){
+    const box=$("ortChips"); box.innerHTML="";
+    orte.slice(0,6).forEach(o=>{const b=document.createElement("button");b.className="chip";b.type="button";b.textContent=o;b.addEventListener("click",()=>{$("ortName").value=o;offFlag=null;render();});box.appendChild(b);});
+  }
+  renderOrte();
+
+  // ---------- message building
+  function b64grid(){
+    const bytes=new Uint8Array(Math.ceil(GW*GH*2/8));
+    for(let i=0;i<GW*GH;i++) bytes[i>>2]|=(grid[i]&3)<<((3-(i&3))*2);
+    let s=""; bytes.forEach(b=>s+=String.fromCharCode(b)); return btoa(s);
+  }
+  function message(){
+    switch(mode){
+      case "text": return $("msg").value.trim();
+      case "draw": return "zeichnung:"+b64grid();
+      case "song": { const t=$("songT").value.trim(), k=$("songK").value.trim(); return t?`song:${t}${k?" | "+k:""}`:""; }
+      case "kapsel": { const d=$("kDate").value, t=$("kText").value.trim(); return d&&t?`kapsel:${d} ${t}`:""; }
+      case "ort": { if(offFlag==="ort") return "ort:aus"; const o=$("ortName").value.trim(); return o?"ort:"+o:""; }
+      case "tier": return "trinken";
+      case "anzeige": return "einstellungen:"+JSON.stringify({t:S.tier?1:0,a:+S.art,n:S.name.trim()||"Mimi",z:+S.ziel,d:+S.durst,p:S.push?1:0,g:S.gruss?1:0,h:+S.zuhause,m:+S.minuten,b:S.ank?1:0,lo:S.lo?1:0,lu:S.lu?1:0,r:S.rows.filter(r=>r.on).map(r=>r.k).join("")});
+      case "count": return offFlag==="count"?"countdown:aus":`countdown:${$("cdDate").value} ${$("cdLabel").value.trim()}`.trim();
+      case "trip": {
+        if(offFlag==="trip") return "urlaub:aus";
+        const s=$("tripStart").value, e=$("tripEnd").value;
+        return s?`urlaub:${s}${e&&e>=s?" "+e:""} ${$("tripDest").value.trim()}`.trim():"";
+      }
+      default: return offFlag==="stress"?"stress:aus":`stress:${stressSel}`;
+    }
+  }
+  function atTime(){
+    const v=$("when").value, d=new Date();
+    if(v==="now"||mode==="tier"||mode==="anzeige") return null;
+    if(v==="1h") return Math.floor(d.getTime()/1000)+3600;
+    if(v==="tonight"){d.setHours(22,0,0,0); if(d<new Date()) d.setDate(d.getDate()+1); return Math.floor(d/1000);}
+    d.setDate(d.getDate()+1); d.setHours(7,0,0,0); return Math.floor(d/1000);
+  }
+  const HELP={
+    tier:"„Getrunken eintragen“ schickt ein Glas an dein eigenes Gerät. Das Tier freut sich beim nächsten Aufwachen, spätestens nach 10 Minuten. Noch schneller geht es über den Knopf in der Trink-Erinnerung.",
+    anzeige:"Das Gerät übernimmt die Einstellungen beim nächsten Aufwachen, zeigt kurz den Zuhause-Bildschirm und schickt dir eine Bestätigung aufs Handy. Die Auswahl merkt sich die Seite pro Gerät.",
+    kapsel:"Die Kapsel wird sofort eingelagert. Du bekommst eine Meldung, sobald sie sicher angekommen ist, und noch eine, wenn sie aufgeht.",
+    def:"„Senden“ öffnet ntfy in einem neuen Tab und stellt die Nachricht zu. Kommt dort eine Antwort mit <code>\"event\":\"message\"</code>, ist sie unterwegs. Sobald sie auf dem Display steht, bekommst du eine Angekommen-Meldung aufs Handy."
+  };
+  function update(){
+    const own=mode==="tier"||(mode==="anzeige"&&$("cfgTarget").value==="own");
+    const topic=(own?$("ownTopic"):$("topic")).value.trim(), msg=message(), name=$("name").value.trim();
+    $("out").textContent=msg||"(leer)";
+    $("sendOpts").hidden=mode==="tier"||mode==="anzeige";
+    $("sendHelp").innerHTML=HELP[mode]||HELP.def;
+    const btn=$("sendBtn"), label=mode==="tier"?"Getrunken eintragen":mode==="anzeige"?"Ans Gerät schicken":"Senden";
+    if(!topic||!msg){btn.setAttribute("aria-disabled","true");btn.href="#";btn.textContent=topic?label:(own?"Erst eigenes Thema eintragen":"Erst Thema eintragen");return;}
+    btn.removeAttribute("aria-disabled"); btn.textContent=label;
+    const q=new URLSearchParams({message:msg});
+    if(name && (mode==="text"||mode==="draw"||mode==="song"||mode==="anzeige")) q.set("title",name);
+    const at=atTime(); if(at) q.set("at",String(at));
+    btn.href=`https://ntfy.sh/${encodeURIComponent(topic)}/publish?${q.toString()}`;
+    const ot=$("ownTopic").value.trim();
+    $("handyTopic").innerHTML=ot?`Dein Handy-Thema in der ntfy-App: <code>${ot.replace(/[<&>]/g,"")}-handy</code>`:"";
+  }
+  function remember(){
+    if(mode==="text") sent.lastText=$("msg").value.trim();
+    if(mode==="song") sent.song={t:$("songT").value.trim(),k:$("songK").value.trim()};
+    if(mode==="kapsel"){const d=$("kDate").value; if(!sent.kapsel||d<sent.kapsel||daysUntil(sent.kapsel)<0) sent.kapsel=d;}
+    if(mode==="ort"){
+      if(offFlag==="ort") sent.ort=null;
+      else{const o=$("ortName").value.trim(); sent.ort=o; orte=[o,...orte.filter(x=>x.toLowerCase()!==o.toLowerCase())].slice(0,6); store.set("orte",JSON.stringify(orte)); renderOrte();}
+    }
+    if(mode==="count") sent.cd=offFlag==="count"?null:{date:$("cdDate").value,label:$("cdLabel").value.trim()};
+    if(mode==="trip") sent.trip=offFlag==="trip"?null:{start:$("tripStart").value,end:$("tripEnd").value,dest:$("tripDest").value.trim()};
+    if(mode==="stress") sent.stress=offFlag==="stress"?null:stressSel;
+    store.set("sent",JSON.stringify(sent));
+  }
+
+  // ---------- tabs
+  const HINTS={
+    draw:"Hier drauf malen, mit Finger oder Maus.",
+    ort:"Vorschau des Zuhause-Bildschirms bei der anderen Person.",
+    tier:"So sieht der Zuhause-Bildschirm aus. Er erscheint ein paar Stunden nach der letzten Nachricht.",
+    kapsel:"So sieht die Kapsel aus, wenn sie aufgeht.",
+    stress:"Vorschau: so erscheint dein Stress bei der anderen Person.",
+    anzeige:"Vorschau mit Beispieldaten. So sieht der Zuhause-Bildschirm mit deiner Auswahl aus."
+  };
+  document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+    mode=b.dataset.mode; offFlag=null; $("toast").textContent="";
+    document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));
+    ["text","draw","song","kapsel","ort","tier","count","trip","stress","anzeige"].forEach(k=>$("p-"+k).hidden=mode!==k);
+    $("device").classList.toggle("drawing",mode==="draw");
+    $("previewHint").textContent=HINTS[mode]||"So sieht es auf dem Gerät der anderen Person aus.";
+    markStress(); render();
+  }));
+
+  // ---------- inputs
+  const msg=$("msg");
+  document.querySelectorAll("[data-ins]").forEach(b=>b.addEventListener("click",()=>{
+    const s=msg.selectionStart??msg.value.length, e=msg.selectionEnd??s, ins=b.dataset.ins;
+    const pre=msg.value.slice(0,s), sp=pre&&!pre.endsWith(" ")?" ":"";
+    msg.value=pre+sp+ins+" "+msg.value.slice(e); msg.focus(); render();
+  }));
+  document.querySelectorAll("[data-set]").forEach(b=>b.addEventListener("click",()=>{msg.value=b.dataset.set; msg.focus(); msg.setSelectionRange(msg.value.length,msg.value.length); render();}));
+  document.querySelectorAll("[data-kapsel]").forEach(b=>b.addEventListener("click",()=>{$("kDate").value=plus(+b.dataset.kapsel);render();}));
+  document.querySelectorAll("[data-mood]").forEach(b=>b.addEventListener("click",()=>{moodSel=+b.dataset.mood;document.querySelectorAll("[data-mood]").forEach(x=>x.classList.toggle("on",x===b));render();}));
+  ["msg","name","cdDate","cdLabel","tripStart","tripEnd","tripDest","when","songT","songK","kDate","kText","ortName"].forEach(id=>$(id).addEventListener("input",()=>{offFlag=null;render();}));
+  $("name").addEventListener("change",()=>store.set("name",$("name").value));
+
+  // ---------- Anzeige controls
+  const CF={cfgTier:"tier",cfgPush:"push",cfgGruss:"gruss",cfgAnk:"ank",cfgLo:"lo",cfgLu:"lu"};
+  const CV={cfgArt:"art",cfgName:"name",cfgZiel:"ziel",cfgDurst:"durst",cfgZuh:"zuhause",cfgMin:"minuten"};
+  function saveCfg(){store.set("cfg_"+$("cfgTarget").value,JSON.stringify(S));}
+  function renderRows(){
+    const ul=$("cfgRows"); ul.innerHTML="";
+    const partner=$("cfgTarget").value==="own"?"Partner":"dir";
+    S.rows.forEach((r,i)=>{
+      const li=document.createElement("li"); li.className=r.on?"":"off";
+      let label=ROWS[r.k]; if(r.k==="O") label=$("cfgTarget").value==="own"?"Wo ist mein Partner":"Wo bin ich";
+      li.innerHTML=`<label><input type="checkbox" id="row-${r.k}" ${r.on?"checked":""}><span class="num">${i+1}</span>${label}</label>
+        <button class="mv" type="button" aria-label="${label} nach oben" ${i===0?"disabled":""}>↑</button>
+        <button class="mv" type="button" aria-label="${label} nach unten" ${i===S.rows.length-1?"disabled":""}>↓</button>`;
+      li.querySelector("input").addEventListener("change",e=>{r.on=e.target.checked;saveCfg();renderRows();render();});
+      const [up,down]=li.querySelectorAll(".mv");
+      up.addEventListener("click",()=>{[S.rows[i-1],S.rows[i]]=[S.rows[i],S.rows[i-1]];saveCfg();renderRows();render();ul.querySelectorAll(".mv")[(i-1)*2]?.focus();});
+      down.addEventListener("click",()=>{[S.rows[i+1],S.rows[i]]=[S.rows[i],S.rows[i+1]];saveCfg();renderRows();render();ul.querySelectorAll(".mv")[(i+1)*2+1]?.focus();});
+      ul.appendChild(li);
+    });
+  }
+  function loadCfgForm(){
+    Object.entries(CF).forEach(([id,k])=>$(id).checked=!!S[k]);
+    Object.entries(CV).forEach(([id,k])=>$(id).value=String(S[k]));
+    ["cfgArt","cfgName","cfgZiel","cfgDurst","cfgPush"].forEach(id=>$(id).disabled=!S.tier);
+    renderRows();
+  }
+  Object.entries(CF).forEach(([id,k])=>$(id).addEventListener("change",()=>{S[k]=$(id).checked;saveCfg();loadCfgForm();render();}));
+  Object.entries(CV).forEach(([id,k])=>$(id).addEventListener("input",()=>{S[k]=$(id).value;saveCfg();render();}));
+  $("cfgTarget").value=S===cfgs.partner?"partner":"own";
+  $("cfgTarget").addEventListener("change",()=>{const t=$("cfgTarget").value;store.set("cfgTarget",t);S=cfgs[t];loadCfgForm();render();});
+  loadCfgForm();
+  ["topic","ownTopic"].forEach(id=>$(id).addEventListener("input",()=>{store.set(id,$(id).value.trim());update();}));
+  $("genTopic").addEventListener("click",()=>{
+    const rnd=()=>{const a=new Uint8Array(10);crypto.getRandomValues(a);return Array.from(a,x=>"abcdefghjkmnpqrstuvwxyz23456789"[x%31]).join("");};
+    $("topic").value=`cinja-${rnd()}`; $("ownTopic").value=`lean-${rnd()}`;
+    store.set("topic",$("topic").value); store.set("ownTopic",$("ownTopic").value); update();
+  });
+  $("cdOff").addEventListener("click",()=>{offFlag="count";render();$("toast").textContent="Beim Senden wird der Countdown auf dem Gerät beendet.";});
+  $("tripOff").addEventListener("click",()=>{offFlag="trip";render();$("toast").textContent="Beim Senden wird der Urlaubs-Timer auf dem Gerät beendet.";});
+  $("stressOff").addEventListener("click",()=>{offFlag="stress";markStress();render();$("toast").textContent="Beim Senden verschwindet die Stress-Anzeige.";});
+  $("ortOff").addEventListener("click",()=>{offFlag="ort";render();$("toast").textContent="Beim Senden verschwindet dein Ort vom Display.";});
+
+  // ---------- drawing
+  let painting=false;
+  function cellAt(ev){const r=cv.getBoundingClientRect();const x=Math.floor((ev.clientX-r.left)/r.width*GW), y=Math.floor((ev.clientY-r.top)/r.height*GH);return (x<0||y<0||x>=GW||y>=GH)?-1:y*GW+x;}
+  function paint(ev){const i=cellAt(ev); if(i<0||grid[i]===pen) return; grid[i]=pen; render();}
+  cv.addEventListener("pointerdown",ev=>{if(mode!=="draw")return;painting=true;cv.setPointerCapture(ev.pointerId);paint(ev);});
+  cv.addEventListener("pointermove",ev=>{if(painting)paint(ev);});
+  ["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>painting=false));
+  document.querySelectorAll("[data-pen]").forEach(b=>b.addEventListener("click",()=>{pen=+b.dataset.pen;document.querySelectorAll("[data-pen]").forEach(x=>x.classList.toggle("on",x===b));}));
+  $("clearDraw").addEventListener("click",()=>{grid.fill(0);render();});
+  function heartTemplate(){
+    grid.fill(0);
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+      const nx=(x-26)/11, ny=-(y-12)/10;
+      if(Math.pow(nx*nx+ny*ny-1,3)-nx*nx*ny*ny*ny<=0) grid[y*GW+x]=2;
+    }
+  }
+  $("heartDraw").addEventListener("click",()=>{heartTemplate();render();});
+  heartTemplate();
+
+  // ---------- send / copy
+  $("copyBtn").addEventListener("click",async()=>{
+    const m=message();
+    try{await navigator.clipboard.writeText(m);$("toast").textContent="Kopiert. In der ntfy-App beim Thema einfügen.";}
+    catch(e){const r=document.createRange();r.selectNodeContents($("out"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("toast").textContent="Text ist markiert, jetzt kopieren.";}
+  });
+  $("sendBtn").addEventListener("click",ev=>{
+    if($("sendBtn").getAttribute("aria-disabled")){ev.preventDefault();return;}
+    remember();
+    $("toast").textContent=mode==="tier"?"Glas eingetragen. ntfy ist in einem neuen Tab geöffnet.":"ntfy ist in einem neuen Tab geöffnet.";
+  });
+
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(render);
+  render();
+})();
+</script>
+
+</body>
+</html>
