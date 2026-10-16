@@ -156,6 +156,7 @@ details .panel{border:0;padding:0}
       <button class="chip" data-set="Frage des Tages: ">Frage des Tages</button>
       <button class="chip" data-set="6 7 :67:">67</button>
     </div>
+    <p class="help">Tipp: Eine Nachricht mit „Gute Nacht“, „Schlaf gut“ oder 🌙 hält das Tier um 22 Uhr als Schild hoch.</p>
   </section>
 
   <section class="panel" id="p-draw" hidden>
@@ -235,7 +236,12 @@ details .panel{border:0;padding:0}
       <button class="chip" data-mood="5">Schwach</button>
       <button class="chip" data-mood="0">Schläft</button>
     </div>
-    <p class="help">Das Tier hat <b>5 Lebensherzen</b>. Tagsüber leeren sie sich langsam, und jeder Schluck füllt sie wieder auf. Wer sein Tagesziel gleichmäßig über den Tag trinkt, hält alle Herzen voll. Je leerer die Herzen, desto trauriger schaut das Tier. Bei Durst kommt eine Erinnerung aufs Handy, mit <b>Glas</b> und <b>Flasche</b> direkt als Knopf. Ist es ganz schwach, bekommt auch der Partner einmal Bescheid. Nachts schläft es, dann verliert es keine Herzen. Tier, Name und Ziel stellst du im Reiter <b>Anzeige</b> ein.</p>
+    <div class="row" aria-label="Bildschirm ansehen">
+      <button class="chip on" data-screen="home">Zuhause</button>
+      <button class="chip" data-screen="nacht">Nachtbild 22 Uhr</button>
+      <button class="chip" data-screen="bilanz">Sonntags-Bilanz</button>
+    </div>
+    <p class="help">Das Tier hat <b>5 Lebensherzen</b>. Tagsüber leeren sie sich langsam, und jeder Schluck füllt sie wieder auf. Wer sein Tagesziel gleichmäßig über den Tag trinkt, hält alle Herzen voll. Je leerer die Herzen, desto trauriger schaut das Tier. Bei Durst kommt eine Erinnerung aufs Handy, mit <b>Glas</b> und <b>Flasche</b> direkt als Knopf. Ist es ganz schwach, bekommt auch der Partner einmal Bescheid. Auf dem Display des Partners steht dein Tier klein mit seinen Herzen, und umgekehrt (<b>Ebbe & Flut</b>). Sonntags ab 18 Uhr zeigt das Display die <b>Wochenbilanz</b>: Wer hat mehr getrunken? Um 22 Uhr schläft das Tier ein und hält euren letzten Gute-Nacht-Gruß als Schild hoch. Kam bis 21:30 keiner, bekommt der Partner eine Erinnerung. Nachts schläft es, dann verliert es keine Herzen. Tier, Name und Ziel stellst du im Reiter <b>Anzeige</b> ein.</p>
   </section>
 
   <section class="panel" id="p-count" hidden>
@@ -368,7 +374,7 @@ details .panel{border:0;padding:0}
   const C={w:"#f1f0ec",b:"#141416",r:"#c8102e"};
   const cv=document.getElementById("screen"), ctx=cv.getContext("2d");
   const $=id=>document.getElementById(id);
-  let mode="text", pen=1, offFlag=null, stressSel=3, moodSel=1, mlSel=250;
+  let mode="text", pen=1, offFlag=null, stressSel=3, moodSel=1, mlSel=250, screenSel="home";
   const grid=new Uint8Array(GW*GH);
 
   // ---------- storage (only in this browser)
@@ -376,11 +382,12 @@ details .panel{border:0;padding:0}
   ["topic","ownTopic","name"].forEach(k=>{const v=store.get(k); if(v!==null) $(k).value=v;});
 
   // ---------- display settings ("Anzeige"), one set per device
-  const ROWS={G:"Begrüßung",D:"Datum",O:"Wo bin ich",W:"Wetter dort",S:"Song (Last.fm)",U:"Urlaubs-Timer",C:"Countdown",X:"Stress",K:"Zeitkapsel",N:"Letzte Nachricht"};
+  const ROWS={G:"Begrüßung",P:"Tier des Partners",D:"Datum",O:"Wo bin ich",W:"Wetter dort",S:"Song (Last.fm)",U:"Urlaubs-Timer",C:"Countdown",X:"Stress",K:"Zeitkapsel",N:"Letzte Nachricht"};
   const DEFAULT_CFG={tier:true,art:0,name:"Mimi",ziel:1500,leer:480,glas:250,push:true,gruss:true,zuhause:4,minuten:10,ank:true,lo:true,lu:true,
-    rows:["G","D","O","W","S","U","C","X","K","N"].map(k=>({k,on:k!=="D"}))};
+    rows:["G","P","D","O","W","S","U","C","X","K","N"].map(k=>({k,on:k!=="D"}))};
   const cfgs={};
-  ["own","partner"].forEach(t=>{let c=null;try{c=JSON.parse(store.get("cfg_"+t)||"null");}catch(e){} cfgs[t]=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c||{}); if(+cfgs[t].ziel<500) cfgs[t].ziel=1500; delete cfgs[t].durst;});
+  ["own","partner"].forEach(t=>{let c=null;try{c=JSON.parse(store.get("cfg_"+t)||"null");}catch(e){} cfgs[t]=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c||{}); if(+cfgs[t].ziel<500) cfgs[t].ziel=1500; delete cfgs[t].durst;
+    if(!cfgs[t].rows.some(r=>r.k==="P")){const i=cfgs[t].rows.findIndex(r=>r.k==="G");cfgs[t].rows.splice(i+1,0,{k:"P",on:true});}});
   let S=cfgs[store.get("cfgTarget")==="partner"?"partner":"own"];
   if(!$("topic").value) $("setup").open=true;
   let sent={};
@@ -619,6 +626,7 @@ details .panel{border:0;padding:0}
         case "C": if(o.cd&&o.cd.date&&daysUntil(o.cd.date)>=0) add(cdShort(o.cd)); break;
         case "X": if(o.stress!=null) add(from+"s Stress",C.b,"stress"); break;
         case "K": if(o.kapsel){const t=daysUntil(o.kapsel); add(t<=0?"Zeitkapsel morgen frueh":t===1?"Zeitkapsel in 1 Tag":`Zeitkapsel in ${t} Tagen`,C.b,"geschenk");} break;
+        case "P": if(o.partner) add(from+"s "+clean(o.partner.n),o.partner.s>=4?C.r:C.b,"partner"); break;
         case "N": if(o.last){const t=extract(o.last).text; if(t) add('"'+t+'"');} break;
       }
     }
@@ -647,9 +655,36 @@ details .panel{border:0;padding:0}
       if(l.i==="note"||l.i==="noteR"){tx("♫",X,y,1,l.i==="noteR"?C.r:C.b);x=X+10;}
       const room=MAXZ-Math.floor((x-X+5)/6);
       if(l.i==="stress"){const t=cut(l.t,13);tx(t,X,y,1,C.b);stressBoxes(X+(t.length+1)*6,y,o.stress);}
+      else if(l.i==="partner"){const t=cut(l.t,room-7);tx(t,X,y,1,l.f);const hx=X+t.length*6+4,pl=o.partner.l;for(let h=0;h<5;h++)lebensHerz(hx+h*8,y+1,pl>=(h+1)*20?2:pl>=h*20+10?1:0);}
       else tx(cut(l.t,room),x,y,1,l.f);
     });
     return z.length;
+  }
+  function wrapSmall(text,per,max){const out=[];let a="";for(let w of (text+" ").split(" ")){if(!w)continue;if(w.length>per)w=cut(w,per);const p=a?a+" "+w:w;if(p.length<=per)a=p;else{out.push(a);a=w;}if(out.length>=max)break;}if(a&&out.length<max)out.push(a);return out.slice(0,max);}
+  function drawNight(){
+    const from=$("name").value.trim()||"Lean", raw=sent.gnText||"Schlaf gut, träum was Schönes <3 :mond:";
+    const title=clean(from)+" sagt:", text=extract(raw).text;
+    let sx0=6;
+    if(S.tier){ICON.mond(16,12);fr(34,6,1,1,C.b);fr(44,14,1,1,C.b);fr(30,20,1,1,C.b);drawPet(4,30,0,ARTEN[+S.art]||"katze");sx0=62;}
+    const sx1=W-4,sy0=6,sy1=80;
+    ln(0,H-3,W-1,H-3,C.b);
+    const px=Math.floor((sx0+sx1)/2); fr(px-1,sy1,3,H-3-sy1,C.b);
+    sr(sx0,sy0,sx1-sx0,sy1-sy0,C.b); sr(sx0+2,sy0+2,sx1-sx0-4,sy1-sy0-4,C.b);
+    const per=Math.floor((sx1-sx0-12)/6);
+    tx(cut(title,per),sx0+6,sy0+6,1,C.r);
+    wrapSmall(text,per,4).forEach((l,i)=>tx(l,sx0+6,sy0+20+i*11,1,C.b));
+    miniHerz(sx1-13,sy1-12);
+  }
+  function pokal(x,y){ctx.fillStyle=C.r;ctx.beginPath();ctx.roundRect(x-8,y,16,12,3);ctx.fill();oc(x-9,y+4,3,C.r);oc(x+9,y+4,3,C.r);fr(x-2,y+12,4,4,C.b);fr(x-6,y+16,12,3,C.b);}
+  function spalte(t,cx,y,g,c){tx(t,cx-t.length*3*g,y,g,c);}
+  function drawBilanz(){
+    const ich=9800,du=8100,a="Cinja",b=$("name").value.trim()||"Lean";
+    center("Wochenbilanz",3,2,C.b);
+    if(ich>=du)pokal(53,24); if(du>=ich)pokal(159,24);
+    ln(W/2,26,W/2,80,C.b);
+    spalte(a,53,48,1,C.b); spalte(clean(b),159,48,1,C.b);
+    spalte(liter(ich)+" l",53,60,2,ich>=du?C.r:C.b); spalte(liter(du)+" l",159,60,2,du>=ich?C.r:C.b);
+    center(ich>du?a+" gewinnt!":du>ich?clean(b)+" gewinnt!":"Unentschieden!",88,1,C.r);
   }
   function homeOpts(extra){
     const from=$("name").value.trim()||"Lean", ziel=+S.ziel;
@@ -661,7 +696,8 @@ details .panel{border:0;padding:0}
       trip:sent.trip||{start:plus(47),end:plus(57),dest:"Bali"},
       cd:sent.cd||{date:plus(14),label:"Wiedersehen"},
       stress:sent.stress!=null?sent.stress:2,
-      kapsel:sent.kapsel||plus(30), last:sent.lastText||"Hab dich lieb <3"
+      kapsel:sent.kapsel||plus(30), last:sent.lastText||"Hab dich lieb <3",
+      partner:{n:"Frosti",l:60,s:2}
     },extra||{});
   }
 
@@ -685,7 +721,7 @@ details .panel{border:0;padding:0}
       syms.slice(0,7).forEach((k,i)=>ICON[k](Math.round(x0+i*step),H-13));
     }
     else if(mode==="ort") drawHome(homeOpts({mood:2,ort:offFlag==="ort"?null:($("ortName").value.trim()||null),wetter:"wird vom Gerät geholt"}));
-    else if(mode==="tier") drawHome(homeOpts());
+    else if(mode==="tier"){ if(screenSel==="nacht") drawNight(); else if(screenSel==="bilanz") drawBilanz(); else drawHome(homeOpts()); }
     else if(mode==="anzeige"){
       const n=drawHome(homeOpts({mood:moodSel===0?1:moodSel}));
       const on=S.rows.filter(r=>r.on).length;
@@ -777,7 +813,7 @@ details .panel{border:0;padding:0}
     $("handyTopic").innerHTML=ot?`Dein Handy-Thema in der ntfy-App: <code>${ot.replace(/[<&>]/g,"")}-handy</code>`:"";
   }
   function remember(){
-    if(mode==="text") sent.lastText=$("msg").value.trim();
+    if(mode==="text"){ sent.lastText=$("msg").value.trim(); if(/gute nacht|schlaf gut|nachti|träum|traeum|🌙|:mond:|😴/i.test(sent.lastText)) sent.gnText=sent.lastText; }
     if(mode==="song") sent.song={t:$("songT").value.trim(),k:$("songK").value.trim()};
     if(mode==="kapsel"){const d=$("kDate").value; if(!sent.kapsel||d<sent.kapsel||daysUntil(sent.kapsel)<0) sent.kapsel=d;}
     if(mode==="ort"){
@@ -817,6 +853,7 @@ details .panel{border:0;padding:0}
   }));
   document.querySelectorAll("[data-set]").forEach(b=>b.addEventListener("click",()=>{msg.value=b.dataset.set; msg.focus(); msg.setSelectionRange(msg.value.length,msg.value.length); render();}));
   document.querySelectorAll("[data-kapsel]").forEach(b=>b.addEventListener("click",()=>{$("kDate").value=plus(+b.dataset.kapsel);render();}));
+  document.querySelectorAll("[data-screen]").forEach(b=>b.addEventListener("click",()=>{screenSel=b.dataset.screen;document.querySelectorAll("[data-screen]").forEach(x=>x.classList.toggle("on",x===b));render();}));
   document.querySelectorAll("[data-ml]").forEach(b=>b.addEventListener("click",()=>{mlSel=+b.dataset.ml;document.querySelectorAll("[data-ml]").forEach(x=>x.classList.toggle("on",x===b));update();}));
   document.querySelectorAll("[data-mood]").forEach(b=>b.addEventListener("click",()=>{moodSel=+b.dataset.mood;document.querySelectorAll("[data-mood]").forEach(x=>x.classList.toggle("on",x===b));render();}));
   ["msg","name","cdDate","cdLabel","tripStart","tripEnd","tripDest","when","songT","songK","kDate","kText","ortName"].forEach(id=>$(id).addEventListener("input",()=>{offFlag=null;render();}));
@@ -899,6 +936,5 @@ details .panel{border:0;padding:0}
   render();
 })();
 </script>
-
 </body>
 </html>
