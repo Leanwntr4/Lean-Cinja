@@ -217,13 +217,25 @@ details .panel{border:0;padding:0}
   </section>
 
   <section class="panel" id="p-tier" hidden>
+    <div class="box">
+      <h3>Was hast du getrunken?</h3>
+      <div class="row" aria-label="Menge">
+        <button class="chip" data-ml="150">Schluck 150 ml</button>
+        <button class="chip on" data-ml="250">Glas 250 ml</button>
+        <button class="chip" data-ml="330">Dose 330 ml</button>
+        <button class="chip" data-ml="500">Flasche 500 ml</button>
+        <button class="chip" data-ml="1000">Liter 1000 ml</button>
+      </div>
+    </div>
     <div class="row" aria-label="Stimmung ansehen">
       <button class="chip on" data-mood="1">Glücklich</button>
       <button class="chip" data-mood="2">Zufrieden</button>
       <button class="chip" data-mood="3">Durstig</button>
+      <button class="chip" data-mood="4">Traurig</button>
+      <button class="chip" data-mood="5">Schwach</button>
       <button class="chip" data-mood="0">Schläft</button>
     </div>
-    <p class="help">Das Tier lebt auf dem Zuhause-Bildschirm und wird durch Trinken gepflegt. Nach 2,5 Stunden ohne Glas hat es Durst, dann kommt eine Erinnerung aufs Handy, mit einem <b>Getrunken</b>-Knopf direkt in der Meldung. Wer das Tagesziel schafft, baut eine Serie auf. Katze oder Hund, Name und Tagesziel stellst du im Reiter <b>Anzeige</b> ein.</p>
+    <p class="help">Das Tier hat <b>5 Lebensherzen</b>. Tagsüber leeren sie sich langsam, und jeder Schluck füllt sie wieder auf. Wer sein Tagesziel gleichmäßig über den Tag trinkt, hält alle Herzen voll. Je leerer die Herzen, desto trauriger schaut das Tier. Bei Durst kommt eine Erinnerung aufs Handy, mit <b>Glas</b> und <b>Flasche</b> direkt als Knopf. Ist es ganz schwach, bekommt auch der Partner einmal Bescheid. Nachts schläft es, dann verliert es keine Herzen. Tier, Name und Ziel stellst du im Reiter <b>Anzeige</b> ein.</p>
   </section>
 
   <section class="panel" id="p-count" hidden>
@@ -276,16 +288,19 @@ details .panel{border:0;padding:0}
       <label class="tg"><input type="checkbox" id="cfgTier"> Haustier anzeigen</label>
       <div class="split">
         <label class="f" for="cfgArt">Tier
-          <select id="cfgArt"><option value="0">Katze</option><option value="1">Hund</option></select>
+          <select id="cfgArt"><option value="0">Katze</option><option value="1">Hund</option><option value="2">Hase</option><option value="3">Pinguin</option><option value="4">Frosch</option></select>
         </label>
         <label class="f" for="cfgName">Name
           <input type="text" id="cfgName" maxlength="9">
         </label>
-        <label class="f" for="cfgZiel">Gläser pro Tag
-          <select id="cfgZiel"><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>10</option><option>12</option></select>
+        <label class="f" for="cfgZiel">Trinkziel pro Tag
+          <select id="cfgZiel"><option value="1000">1,0 Liter</option><option value="1500">1,5 Liter</option><option value="2000">2,0 Liter</option><option value="2500">2,5 Liter</option></select>
         </label>
-        <label class="f" for="cfgDurst">Durst nach
-          <select id="cfgDurst"><option value="90">1,5 Stunden</option><option value="120">2 Stunden</option><option value="150">2,5 Stunden</option><option value="180">3 Stunden</option><option value="240">4 Stunden</option></select>
+        <label class="f" for="cfgDurst">Herzen leer nach
+          <select id="cfgDurst"><option value="360">6 Stunden (streng)</option><option value="480">8 Stunden (normal)</option><option value="600">10 Stunden (gemütlich)</option></select>
+        </label>
+        <label class="f" for="cfgGlas">Ein „Getrunken“ zählt
+          <select id="cfgGlas"><option value="200">200 ml</option><option value="250">250 ml</option><option value="300">300 ml</option><option value="330">330 ml</option></select>
         </label>
       </div>
       <label class="tg"><input type="checkbox" id="cfgPush"> Trink-Erinnerungen aufs Handy</label>
@@ -353,7 +368,7 @@ details .panel{border:0;padding:0}
   const C={w:"#f1f0ec",b:"#141416",r:"#c8102e"};
   const cv=document.getElementById("screen"), ctx=cv.getContext("2d");
   const $=id=>document.getElementById(id);
-  let mode="text", pen=1, offFlag=null, stressSel=3, moodSel=1;
+  let mode="text", pen=1, offFlag=null, stressSel=3, moodSel=1, mlSel=250;
   const grid=new Uint8Array(GW*GH);
 
   // ---------- storage (only in this browser)
@@ -362,10 +377,10 @@ details .panel{border:0;padding:0}
 
   // ---------- display settings ("Anzeige"), one set per device
   const ROWS={G:"Begrüßung",D:"Datum",O:"Wo bin ich",W:"Wetter dort",S:"Song (Last.fm)",U:"Urlaubs-Timer",C:"Countdown",X:"Stress",K:"Zeitkapsel",N:"Letzte Nachricht"};
-  const DEFAULT_CFG={tier:true,art:0,name:"Mimi",ziel:8,durst:150,push:true,gruss:true,zuhause:4,minuten:10,ank:true,lo:true,lu:true,
+  const DEFAULT_CFG={tier:true,art:0,name:"Mimi",ziel:1500,leer:480,glas:250,push:true,gruss:true,zuhause:4,minuten:10,ank:true,lo:true,lu:true,
     rows:["G","D","O","W","S","U","C","X","K","N"].map(k=>({k,on:k!=="D"}))};
   const cfgs={};
-  ["own","partner"].forEach(t=>{let c=null;try{c=JSON.parse(store.get("cfg_"+t)||"null");}catch(e){} cfgs[t]=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c||{});});
+  ["own","partner"].forEach(t=>{let c=null;try{c=JSON.parse(store.get("cfg_"+t)||"null");}catch(e){} cfgs[t]=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c||{}); if(+cfgs[t].ziel<500) cfgs[t].ziel=1500; delete cfgs[t].durst;});
   let S=cfgs[store.get("cfgTarget")==="partner"?"partner":"own"];
   if(!$("topic").value) $("setup").open=true;
   let sent={};
@@ -454,31 +469,40 @@ details .panel{border:0;padding:0}
   }
 
   // ---------- pet (identical pixel data to the device)
-  const SPRITE={
-    katze:[".##..........##.........",".#r#........#r#.........",".#rr########rr#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........",".#............#.........","..#..........#..........","...##########...........","..#..........#....##....","..#..........#....##....","..#...rrrr...#....##....","..#...rrrr...#....##....","..#...rrrr...#....##....","..#..........######.....","..#..#....#..#..........","..############.........."],
-    hund:["....########............","...#........#...........",".###........###.........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........","#rr#........#rr#........",".###........###.........","...#........#...........","....#......#.....##.....",".....######.....##......","...#rrrrrrrr#..##.......","...#........###.........","...#..rrrr..#...........","...#..rrrr..#...........","...#........#...........","...#........#...........","...#..#..#..#...........","...##########..........."]
+  const SPRITE={"katze": [".##..........##.........", ".#r#........#r#.........", ".#rr########rr#.........", ".#............#.........", ".#............#.........", ".#............#.........", ".#............#.........", ".#............#.........", ".#............#.........", ".#............#.........", "..#..........#..........", "...##########...........", "..#..........#....##....", "..#..........#....##....", "..#...rrrr...#....##....", "..#...rrrr...#....##....", "..#...rrrr...#....##....", "..#..........######.....", "..#..#....#..#..........", "..############.........."], "hund": ["....########............", "...#........#...........", ".###........###.........", "#rr#........#rr#........", "#rr#........#rr#........", "#rr#........#rr#........", "#rr#........#rr#........", "#rr#........#rr#........", ".###........###.........", "...#........#...........", "....#......#.....##.....", ".....######.....##......", "...#rrrrrrrr#..##.......", "...#........###.........", "...#..rrrr..#...........", "...#..rrrr..#...........", "...#........#...........", "...#........#...........", "...#..#..#..#...........", "...##########..........."], "hase": ["...##....##.............", "..#rr#..#rr#............", "..#rr#..#rr#............", "..#rr#..#rr#............", "..#rr#..#rr#............", "..#rr#..#rr#............", ".##..####..##...........", ".#..........#...........", ".#..........#...........", ".#..........#...........", ".#..........#...........", ".#..........#...........", "..#........#............", "...########.............", "..#........#............", "..#..rrrr..###..........", "..#..rrrr..###..........", "..#........#............", "..#.##..##.#............", "..##########............"], "pinguin": ["......######............", "....##########..........", "...############.........", "..#..########..#........", "..#............#........", "..#............#........", "..#............#........", ".##............##.......", "###............###......", "###............###......", "###............###......", ".##............##.......", "..#............#........", "..#............#........", "..#............#........", "...#..........#.........", "....##......##..........", "......######............", ".....rr....rr...........", "....rrr....rrr.........."], "frosch": ["..####......####........", ".#....#....#....#.......", ".#....#....#....#.......", ".#....######....#.......", "#................#......", "#................#......", "#................#......", "#................#......", ".#..............#.......", "..##############........", "...#..........#.........", "..#............#........", "..#....rrrr....#........", "..#....rrrr....#........", "..#............#........", "..#............#........", "..#............#........", "..#............#........", ".###..........###.......", "##.##........##.##......"]};
+  const ARTEN=["katze","hund","hase","pinguin","frosch"];
+  // same numbers as TIERE[] in the firmware: eyeL, eyeR, eyeY, mouthX, mouthY, nose, cheekL, cheekR, cheekY
+  const FORM={
+    katze:  {eL:4,eR:10,eY:5,c:7,m:8, nase:[[7,7,2],[8,7,2]], wL:3,wR:12,wY:7},
+    hund:   {eL:5,eR:9, eY:4,c:7,m:9, nase:[[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1]], wL:4,wR:11,wY:6},
+    hase:   {eL:4,eR:8, eY:8,c:6,m:11,nase:[[6,10,2],[7,10,2]], wL:3,wR:10,wY:10},
+    pinguin:{eL:5,eR:11,eY:5,c:8,m:9, nase:[[8,7,2],[9,7,2],[8,8,2],[9,8,2]], wL:4,wR:13,wY:8},
+    frosch: {eL:3,eR:13,eY:1,c:8,m:6, nase:[[7,4,1],[10,4,1]], wL:3,wR:14,wY:5}
   };
-  const FACE={
-    katze:[
-      [[3,6,1],[4,6,1],[5,6,1],[10,6,1],[11,6,1],[12,6,1],[7,7,2],[8,7,2],[7,9,1],[8,9,1]],
-      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[5,8,1],[6,9,1],[7,9,1],[8,9,1],[9,9,1],[10,8,1],[3,7,2],[12,7,2]],
-      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[6,9,1],[7,9,1],[8,9,1],[9,9,1]],
-      [[4,5,1],[5,5,1],[4,6,1],[5,6,1],[10,5,1],[11,5,1],[10,6,1],[11,6,1],[7,7,2],[8,7,2],[6,9,1],[7,8,1],[8,8,1],[9,9,1],[4,7,2],[4,8,2]]
-    ],
-    hund:[
-      [[5,5,1],[6,5,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1]],
-      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,8,1],[6,9,1],[9,9,1],[10,8,1],[7,9,2],[8,9,2],[7,10,2]],
-      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,8,1],[6,9,1],[9,9,1],[10,8,1]],
-      [[5,4,1],[6,4,1],[5,5,1],[6,5,1],[9,4,1],[10,4,1],[9,5,1],[10,5,1],[6,7,1],[7,7,1],[8,7,1],[9,7,1],[7,8,1],[8,8,1],[5,10,1],[6,9,1],[9,9,1],[10,10,1],[5,6,2],[5,7,2]]
-    ]
-  };
+  // moods: 0 sleeps, 1 happy, 2 content, 3 thirsty, 4 sad, 5 weak
   function drawPet(sx,sy,s,art){
-    SPRITE[art].forEach((row,y)=>{for(let x=0;x<24;x++){const c=row[x]; if(c==="#")fr(sx+x*2,sy+y*2,2,2,C.b); else if(c==="r")fr(sx+x*2,sy+y*2,2,2,C.r);}});
-    FACE[art][s].forEach(([x,y,c])=>fr(sx+x*2,sy+y*2,2,2,c===2?C.r:C.b));
+    const t=FORM[art], px=(x,y,c)=>fr(sx+x*2,sy+y*2,2,2,c===2?C.r:C.b);
+    SPRITE[art].forEach((row,y)=>{for(let x=0;x<24;x++){const c=row[x]; if(c==="#")px(x,y,1); else if(c==="r")px(x,y,2);}});
+    t.nase.forEach(([x,y,c])=>px(x,y,c));
+    const ey=t.eY;
+    if(s===0||s===5){px(t.eL,ey+1,1);px(t.eL+1,ey+1,1);px(t.eR,ey+1,1);px(t.eR+1,ey+1,1);}
+    else for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){px(t.eL+dx,ey+dy,1);px(t.eR+dx,ey+dy,1);}
+    const c=t.c,m=t.m;
+    if(s===0){px(c,m+1,1);px(c+1,m+1,1);}
+    else if(s===1){px(c-2,m,1);px(c+3,m,1);for(let i=-1;i<=2;i++)px(c+i,m+1,1);px(t.wL,t.wY,2);px(t.wR,t.wY,2);}
+    else if(s===2){px(c-1,m,1);px(c+2,m,1);px(c,m+1,1);px(c+1,m+1,1);}
+    else if(s===3){for(let i=-1;i<=2;i++)px(c+i,m+1,1);}
+    else if(s===4){px(c-1,m+1,1);px(c+2,m+1,1);px(c,m,1);px(c+1,m,1);px(t.eL,ey+2,2);px(t.eL,ey+3,2);}
+    else {px(c-2,m+1,1);px(c+3,m+1,1);for(let i=-1;i<=2;i++)px(c+i,m,1);px(t.eL,ey+2,2);px(t.eL,ey+3,2);px(t.eR+1,ey+2,2);px(t.eR+1,ey+3,2);}
     if(s===1){miniHerz(sx+42,sy+2);miniHerz(sx+46,sy+12);}
-    if(s===3){fc(sx+46,sy+10,4,C.r);ft(sx+46,sy+1,sx+42,sy+8,sx+50,sy+8,C.r);}
+    if(s===3) tropfen(sx+44,sy+4,true);
+    if(s===4){tropfen(sx+41,sy+2,true);tropfen(sx+47,sy+10,true);}
+    if(s===5){fc(sx+46,sy+10,4,C.r);ft(sx+46,sy+1,sx+42,sy+8,sx+50,sy+8,C.r);tx("!",sx+44,sy+18,1,C.r);}
     if(s===0){tx("z",sx+40,sy+8,1,C.b);tx("Z",sx+46,sy,1,C.b);}
   }
+  const HV=[".##.##.","#######","#######",".#####.","..###..","...#..."], HR=[".##.##.","#..#..#","#.....#",".#...#.","..#.#..","...#..."];
+  function lebensHerz(x,y,f){for(let r=0;r<6;r++)for(let c=0;c<7;c++){const innen=HV[r][c]==="#",rand=HR[r][c]==="#";const rot=innen&&(f===2||(f===1&&c<=3));if(rot)fr(x+c,y+r,1,1,C.r);else if(rand)fr(x+c,y+r,1,1,C.b);}}
+  const liter=ml=>{const z=Math.round(ml/100);return Math.floor(z/10)+","+(z%10);};
 
   // ---------- status elements
   const STRESS_W=38+5*7;
@@ -573,8 +597,12 @@ details .panel{border:0;padding:0}
   function datumText(room){const d=new Date(),l=`${WT[d.getDay()]}, ${d.getDate()}. ${MO[d.getMonth()]}`;return l.length<=room?l:`${WT[d.getDay()].slice(0,2)}, ${d.getDate()}. ${MO[d.getMonth()]}`;}
   function homeLines(o,s,room){
     const z=[], add=(t,f,i)=>{if(z.length<8)z.push({t,f:f||C.b,i:i||0});};
-    const tier=clean(S.name||"Mimi"), from=clean(o.from), durst=S.tier&&s===3;
-    if(durst){add(tier+" hat Durst!",C.r);add("Trink ein Glas Wasser");}
+    const tier=clean(S.name||"Mimi"), from=clean(o.from), durst=S.tier&&s>=3;
+    if(durst){
+      if(s===3){add(tier+" hat Durst!",C.r);add("Trink ein Glas Wasser");}
+      else if(s===4){add(tier+" ist traurig",C.r);add("Bitte trink etwas");}
+      else {add(tier+" braucht Wasser!",C.r);add("Schnell ein Glas, bitte");}
+    }
     let nachOrt=false;
     const h=new Date().getHours();
     const gruss=((h>=22||h<5)?"Gute Nacht":h<11?"Guten Morgen":h<18?"Hallo":"Guten Abend")+", "+clean(o.me||"Cinja");
@@ -601,15 +629,13 @@ details .panel{border:0;padding:0}
     const s=S.tier?o.mood:2, tier=clean(S.name||"Mimi");
     let X=4, MAXZ=34;
     if(S.tier){
-      drawPet(4,4,s,+S.art===1?"hund":"katze");
+      drawPet(4,4,s,ARTEN[+S.art]||"katze");
       const nm=cut(tier,9); tx(nm,(58-nm.length*6)/2,47,1,C.r);
-      const ziel=+S.ziel, anzahl=Math.min(ziel,8), voll=ziel<=8?o.glaeser:Math.floor(o.glaeser*8/ziel);
-      const x0=(58-anzahl*6)/2;
-      for(let i=0;i<anzahl;i++) tropfen(x0+i*6,58,i<voll);
-      const gl=`${o.glaeser}/${ziel} Glas`; tx(gl,(58-gl.length*6)/2,70,1,C.b);
-      if(o.serie>0){const se="Serie "+o.serie; tx(se,(58-se.length*6)/2,81,1,C.b);}
-      const wort=["schläft","glücklich","zufrieden","durstig!"][s];
-      tx(wort,(58-wort.length*6)/2,93,1,s===3?C.r:C.b);
+      for(let i=0;i<5;i++){const f=o.leben>=(i+1)*20-0.5?2:o.leben>=i*20+9.5?1:0; lebensHerz(5+i*10,58,f);}
+      const ml=`${liter(o.ml)}/${liter(+S.ziel)}l`; tx(ml,(58-ml.length*6)/2,68,1,C.b);
+      if(o.serie>0){const se="Serie "+o.serie; tx(se,(58-se.length*6)/2,80,1,C.b);}
+      const wort=["schläft","glücklich","zufrieden","durstig","traurig","schwach!"][s];
+      tx(wort,(58-wort.length*6)/2,93,1,s>=3?C.r:C.b);
       ln(58,3,58,H-4,C.b);
       X=63; MAXZ=24;
     }
@@ -628,7 +654,7 @@ details .panel{border:0;padding:0}
   function homeOpts(extra){
     const from=$("name").value.trim()||"Lean", ziel=+S.ziel;
     return Object.assign({
-      mood:moodSel, glaeser:[0,Math.max(ziel-2,1),Math.ceil(ziel/2)-1,2][moodSel], serie:moodSel===1?4:0,
+      mood:moodSel, leben:[70,100,70,50,30,10][moodSel], ml:Math.round(ziel*[0.9,0.8,0.5,0.35,0.2,0.1][moodSel]/50)*50, serie:moodSel===1?4:0,
       from, me:"Cinja",
       ort:sent.ort||"Wien", wetter:"12°C, Regen",
       song:sent.song?{t:sent.song.t,k:sent.song.k,live:false}:{t:"Musik sein",k:"Wincent Weiss",live:true},
@@ -710,8 +736,8 @@ details .panel{border:0;padding:0}
       case "song": { const t=$("songT").value.trim(), k=$("songK").value.trim(); return t?`song:${t}${k?" | "+k:""}`:""; }
       case "kapsel": { const d=$("kDate").value, t=$("kText").value.trim(); return d&&t?`kapsel:${d} ${t}`:""; }
       case "ort": { if(offFlag==="ort") return "ort:aus"; const o=$("ortName").value.trim(); return o?"ort:"+o:""; }
-      case "tier": return "trinken";
-      case "anzeige": return "einstellungen:"+JSON.stringify({t:S.tier?1:0,a:+S.art,n:S.name.trim()||"Mimi",z:+S.ziel,d:+S.durst,p:S.push?1:0,g:S.gruss?1:0,h:+S.zuhause,m:+S.minuten,b:S.ank?1:0,lo:S.lo?1:0,lu:S.lu?1:0,r:S.rows.filter(r=>r.on).map(r=>r.k).join("")});
+      case "tier": return "trinken:"+mlSel;
+      case "anzeige": return "einstellungen:"+JSON.stringify({t:S.tier?1:0,a:+S.art,n:S.name.trim()||"Mimi",ml:+S.ziel,le:+S.leer,gl:+S.glas,p:S.push?1:0,g:S.gruss?1:0,h:+S.zuhause,m:+S.minuten,b:S.ank?1:0,lo:S.lo?1:0,lu:S.lu?1:0,r:S.rows.filter(r=>r.on).map(r=>r.k).join("")});
       case "count": return offFlag==="count"?"countdown:aus":`countdown:${$("cdDate").value} ${$("cdLabel").value.trim()}`.trim();
       case "trip": {
         if(offFlag==="trip") return "urlaub:aus";
@@ -729,7 +755,7 @@ details .panel{border:0;padding:0}
     d.setDate(d.getDate()+1); d.setHours(7,0,0,0); return Math.floor(d/1000);
   }
   const HELP={
-    tier:"„Getrunken eintragen“ schickt ein Glas an dein eigenes Gerät. Das Tier freut sich beim nächsten Aufwachen, spätestens nach 10 Minuten. Noch schneller geht es über den Knopf in der Trink-Erinnerung.",
+    tier:"„Getrunken eintragen“ schickt die Menge an dein eigenes Gerät. Die Herzen füllen sich beim nächsten Aufwachen, spätestens nach 10 Minuten. Noch schneller geht es über die Knöpfe in der Trink-Erinnerung.",
     anzeige:"Das Gerät übernimmt die Einstellungen beim nächsten Aufwachen, zeigt kurz den Zuhause-Bildschirm und schickt dir eine Bestätigung aufs Handy. Die Auswahl merkt sich die Seite pro Gerät.",
     kapsel:"Die Kapsel wird sofort eingelagert. Du bekommst eine Meldung, sobald sie sicher angekommen ist, und noch eine, wenn sie aufgeht.",
     def:"„Senden“ öffnet ntfy in einem neuen Tab und stellt die Nachricht zu. Kommt dort eine Antwort mit <code>\"event\":\"message\"</code>, ist sie unterwegs. Sobald sie auf dem Display steht, bekommst du eine Angekommen-Meldung aufs Handy."
@@ -791,13 +817,14 @@ details .panel{border:0;padding:0}
   }));
   document.querySelectorAll("[data-set]").forEach(b=>b.addEventListener("click",()=>{msg.value=b.dataset.set; msg.focus(); msg.setSelectionRange(msg.value.length,msg.value.length); render();}));
   document.querySelectorAll("[data-kapsel]").forEach(b=>b.addEventListener("click",()=>{$("kDate").value=plus(+b.dataset.kapsel);render();}));
+  document.querySelectorAll("[data-ml]").forEach(b=>b.addEventListener("click",()=>{mlSel=+b.dataset.ml;document.querySelectorAll("[data-ml]").forEach(x=>x.classList.toggle("on",x===b));update();}));
   document.querySelectorAll("[data-mood]").forEach(b=>b.addEventListener("click",()=>{moodSel=+b.dataset.mood;document.querySelectorAll("[data-mood]").forEach(x=>x.classList.toggle("on",x===b));render();}));
   ["msg","name","cdDate","cdLabel","tripStart","tripEnd","tripDest","when","songT","songK","kDate","kText","ortName"].forEach(id=>$(id).addEventListener("input",()=>{offFlag=null;render();}));
   $("name").addEventListener("change",()=>store.set("name",$("name").value));
 
   // ---------- Anzeige controls
   const CF={cfgTier:"tier",cfgPush:"push",cfgGruss:"gruss",cfgAnk:"ank",cfgLo:"lo",cfgLu:"lu"};
-  const CV={cfgArt:"art",cfgName:"name",cfgZiel:"ziel",cfgDurst:"durst",cfgZuh:"zuhause",cfgMin:"minuten"};
+  const CV={cfgArt:"art",cfgName:"name",cfgZiel:"ziel",cfgDurst:"leer",cfgGlas:"glas",cfgZuh:"zuhause",cfgMin:"minuten"};
   function saveCfg(){store.set("cfg_"+$("cfgTarget").value,JSON.stringify(S));}
   function renderRows(){
     const ul=$("cfgRows"); ul.innerHTML="";
@@ -818,7 +845,7 @@ details .panel{border:0;padding:0}
   function loadCfgForm(){
     Object.entries(CF).forEach(([id,k])=>$(id).checked=!!S[k]);
     Object.entries(CV).forEach(([id,k])=>$(id).value=String(S[k]));
-    ["cfgArt","cfgName","cfgZiel","cfgDurst","cfgPush"].forEach(id=>$(id).disabled=!S.tier);
+    ["cfgArt","cfgName","cfgZiel","cfgDurst","cfgGlas","cfgPush"].forEach(id=>$(id).disabled=!S.tier);
     renderRows();
   }
   Object.entries(CF).forEach(([id,k])=>$(id).addEventListener("change",()=>{S[k]=$(id).checked;saveCfg();loadCfgForm();render();}));
